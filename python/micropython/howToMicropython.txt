@@ -1,3 +1,6 @@
+ESP8266 command reference:
+https://github.com/micropython/micropython/blob/master/docs/esp8266/quickref.rst
+
 Installation
 https://docs.micropython.org/en/latest/esp8266/esp8266/tutorial/intro.html
 
@@ -11,10 +14,6 @@ for ESP8266:
 esptool.py --port /dev/ttyUSB0 erase_flash
 
 esptool.py --port /dev/ttyUSB0 --baud 460800 write_flash --flash_size=detect 0 micropython-patched-i2c.bin
-
-ESP8266 command reference:
-https://github.com/micropython/micropython/blob/master/docs/esp8266/quickref.rst
-
 
 
 python script upload tool "ampy":
@@ -106,9 +105,9 @@ for x in range(1,10):
  np.write()
 
 
-=============================================
+===================================================
 neoPixel driver
-================================================
+===================================================
 
 from machine import Pin
 from neopixel import NeoPixel
@@ -180,7 +179,113 @@ while 1:
 	 for i in range(len(buf)):
 	  dac2.write(buf[i])
 
+==================================================================================================
 
+ESP32 Wifi 
+
+# https://github.com/micropython/micropython/blob/master/docs/esp8266/tutorial/network_basics.rst
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Attention: weak USB-cable may lead 
+to low power and not working Wifi.
+Try different USB-cable or power supply 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+==================================================================================================
+
+
+# configure ESP as access point
+
+import network
+sta_if = network.WLAN(network.STA_IF)
+ap_if = network.WLAN(network.AP_IF)
+# acivate as access point
+sta_if.active(True) 
+# check the configuration
+ap_if.ifconfig()
+# ('192.168.4.1', '255.255.255.0', '192.168.4.1', '8.8.8.8')
+# you may connect with your computer to the access point and 
+# ping 192.168.4.1
+
+===================================================
+ESP32 ADC
+===================================================
+from machine import ADC
+from machine import Pin
+adc=ADC(Pin(36))
+adc.read()
+===================================================
+
+ESP32 UDP
+
+===================================================
+# ESP UDP ping pong access point 
+# wait for data from the PC and 
+# send an upcounting number to the PC
+
+import network
+import socket
+
+port=1024
+
+sta_if = network.WLAN(network.STA_IF)
+ap_if = network.WLAN(network.AP_IF)
+# acivate as access point
+sta_if.active(True) 
+# check the configuration
+ap_if.ifconfig()
+
+ip = ap_if.ifconfig()[0]
+print(ip)
+s=socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+s.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1) 
+s.bind((ip,port))
+print('waiting....')
+counter=0
+while True:
+  data,addr=s.recvfrom(1024) # wait for message from udp partner
+  s.sendto(str(counter),addr) # pong the response back
+  counter=counter+1
+  print('received:',data,'from',addr)
+
+======================================================
+
+ESP32 UDP ADC client
+
+======================================================
+# use the ESP as access point remote measuremnt device
+# 1. wait for a UDP request from the PC
+# 2. send the ADC value to the PC
+
+from machine import ADC
+from machine import Pin
+import network
+import socket
+
+port=1024
+
+sta_if = network.WLAN(network.STA_IF)
+ap_if = network.WLAN(network.AP_IF)
+# acivate as access point
+sta_if.active(True) 
+# check the configuration
+ap_if.ifconfig()
+
+ip = ap_if.ifconfig()[0]
+print(ip)
+s=socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+s.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1) 
+s.bind((ip,port))
+print('waiting....')
+
+adc=ADC(Pin(36))
+counter=0
+
+while True:
+  data,addr=s.recvfrom(1024) # wait for message from udp partner
+  s.sendto(str(adc.read()),addr) # pong the response back
+  counter=counter+1
+  print('received:',data,'from',addr)
 
 
 
