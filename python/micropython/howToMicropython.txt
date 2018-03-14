@@ -1,0 +1,186 @@
+Installation
+https://docs.micropython.org/en/latest/esp8266/esp8266/tutorial/intro.html
+
+Flashing micropython: use the "esptool"
+
+!! install with pip, not with Ubuntu ppa !!
+pip install esptool
+
+
+for ESP8266:
+esptool.py --port /dev/ttyUSB0 erase_flash
+
+esptool.py --port /dev/ttyUSB0 --baud 460800 write_flash --flash_size=detect 0 micropython-patched-i2c.bin
+
+ESP8266 command reference:
+https://github.com/micropython/micropython/blob/master/docs/esp8266/quickref.rst
+
+
+
+python script upload tool "ampy":
+https://www.mikrocontroller.net/topic/442984?goto=5344477#5344477
+
+ampy --port /dev/ttyUSB0 run test.py
+ampy --port /dev/ttyUSB0 put mpu6050.py
+ampy --port /dev/ttyUSB0 ls
+ampy --port /dev/ttyUSB0 get boot.py
+
+!! very important: close the terminal when you try to upload files with ampy. !! 
+If not the communciation is blocked by the terminal.
+
+
+============================================
+meminfo
+============================================
+import micropython
+micropython.mem_info()
+
+============================================
+list internal file system directory
+============================================
+
+import os
+os.listdir()
+
+============================================
+I2C scanner
+============================================
+import machine
+scl = machine.Pin(12, machine.Pin.OPEN_DRAIN, machine.Pin.PULL_UP)
+sda = machine.Pin(13, machine.Pin.OPEN_DRAIN, machine.Pin.PULL_UP)
+i2c = machine.I2C(scl=scl, sda=sda)
+i2c.scan()
+
+============================================
+MPU6050
+============================================
+
+Treiber from
+
+https://github.com/adamjezek98/MPU6050-ESP8266-MicroPython
+
+from machine import I2C, Pin
+import mpu6050
+i2c = I2C(scl=Pin(5), sda=Pin(4))
+accelerometer = mpu6050.accel(i2c)
+for x in range(1,10000):                                                                  
+  accelerometer.get_values()
+
+
+from machine import I2C, Pin
+import mpu6050
+i2c = I2C(scl=Pin(12), sda=Pin(13))
+accelerometer = mpu6050.accel(i2c)
+for x in range(1,10000):                                                                  
+  accelerometer.get_values()
+
+from machine import I2C, Pin
+import mpu6050
+i2c = I2C(scl=Pin(5), sda=Pin(4))
+accelerometer = mpu6050.accel(i2c)
+for x in range(1,10):                                                                  
+  accelerometer.get_values()
+
+
+
+########################################################################
+
+from machine import I2C, Pin
+from neopixel import NeoPixel
+import mpu6050
+i2c = I2C(scl=Pin(5), sda=Pin(4))
+accelerometer = mpu6050.accel(i2c)
+
+pin = Pin(0, Pin.OUT)   # set GPIO0 to output to drive NeoPixels
+np = NeoPixel(pin, 8)   # create NeoPixel driver on GPIO0 for 8 pixels
+np[0] = (10, 0, 0) # set the first pixel to white
+np.write()              # write data to all pixels
+
+for x in range(1,10):
+ w=accelerometer.get_values()
+ az=w['AcZ']
+ if az>5000:
+  np[0] = (100, 0, 0)
+ else:
+  np[0] = (0, 100, 0)
+ np.write()
+
+
+=============================================
+neoPixel driver
+================================================
+
+from machine import Pin
+from neopixel import NeoPixel
+
+pin = Pin(0, Pin.OUT)   # set GPIO0 to output to drive NeoPixels
+np = NeoPixel(pin, 8)   # create NeoPixel driver on GPIO0 for 8 pixels
+np[0] = (255, 255, 255) # set the first pixel to white
+np.write()              # write data to all pixels
+r, g, b = np[0]         # get first pixel colour
+
+
+===================================================
+ESP8266
+===================================================
+
+from machine import UART
+uart = UART(2,9600)
+uart.init(9600)
+uart.write("hello\n")
+
+
+
+===================================================
+ESP32 sine
+===================================================
+
+import math
+from machine import DAC
+from machine import Pin
+
+dac1 = DAC(Pin(25))
+dac2 = DAC(Pin(26))
+
+# create a buffer containing a sine-wave
+buf = bytearray(100)
+for i in range(len(buf)):
+ buf[i] = 128 + int(127 * math.sin(2 * math.pi * i / len(buf)))
+
+while 1:
+ for i in range(len(buf)):
+  dac2.write(buf[i])
+
+===================================================
+ESP32 sine sounds
+===================================================
+
+import math
+from machine import DAC
+from machine import Pin
+
+dac1 = DAC(Pin(25))
+dac2 = DAC(Pin(26))
+
+while 1:
+	# create a buffer containing a sine-wave
+	buf = bytearray(100)
+	for i in range(len(buf)):
+	 buf[i] = 128 + int(127 * math.sin(2 * math.pi * i / len(buf)))
+
+	for n in range(0,100):
+	 for i in range(len(buf)):
+	  dac2.write(buf[i])
+
+	buf = bytearray(50)
+	for i in range(len(buf)):
+	 buf[i] = 128 + int(127 * math.sin(2 * math.pi * i / len(buf)))
+
+	for n in range(0,100):
+	 for i in range(len(buf)):
+	  dac2.write(buf[i])
+
+
+
+
+
